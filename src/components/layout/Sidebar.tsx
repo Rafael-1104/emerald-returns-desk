@@ -52,7 +52,7 @@ export function Sidebar() {
           className="h-11 w-11 shrink-0 rounded-xl object-contain"
         />
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-bold uppercase leading-tight tracking-wide text-sidebar-foreground">
+          <p className="text-[12px] font-bold uppercase leading-tight tracking-wide text-sidebar-foreground">
             Sistema de Devoluções
           </p>
           <p className="truncate text-xs text-sidebar-muted">Controle de materiais</p>
