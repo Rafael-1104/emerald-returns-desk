@@ -15,14 +15,14 @@ Acesso via um "repositório" (`src/lib/devolucoes-store.ts`) com funções assí
 
 ## Nova devolução
 
-- Ao abrir, cria/retoma um rascunho com identificador interno gerado (DEV-AAAA-NNNNN). Sem campo de RM aqui.
+- A tela não cria nada sozinha: a devolução só é criada quando o usuário clica explicitamente em "Iniciar nova devolução", e só então o identificador interno (DEV-AAAA-NNNNN) é gerado. Devoluções "em montagem" podem ser retomadas pelo histórico. Sem campo de RM aqui.
 - Formulário do item: código (busca no catálogo, descrição somente leitura, erro se não existir), lote, e lista dinâmica de volumes (adicionar, remover, editar quantidade). Total calculado automaticamente e exibido, nunca digitado.
 - Mesmo código pode repetir com lotes diferentes; nada é agrupado.
 - Lista de itens: Código, Descrição, Lote, Volumes (V1: 20, V2: 50...), Total, Ações (Editar / Remover com confirmação).
 - Botão "Gerar CSV para ARECO": baixa `Codigo;Quantidade` com o total por item, muda status para "CSV gerado" e registra a data. Não finaliza a devolução.
-- Se algum item mudar após o CSV: banner de aviso "Os dados da devolução foram alterados após a geração do CSV. Gere um novo CSV..." e marcação do CSV como desatualizado.
+- CSV desatualizado: apenas alterações que afetam o conteúdo do arquivo (código do material, adição/remoção de volume, alteração de quantidade de volume, remoção/adição de item) invalidam o CSV. Alteração somente de lote não invalida. Quando invalidado, banner "Os dados da devolução foram alterados após a geração do CSV. Gere um novo CSV...". Ao gerar novo CSV, o estado de desatualizado é removido e a nova data de geração é registrada.
 - Área "Número da Requisição de Materiais" (visível após CSV gerado): input + botão "Vincular RM", que grava a RM permanentemente e passa o status para "RM vinculada".
-- Com RM vinculada: botão "Gerar relatório final" leva à tela de relatório e marca como finalizada.
+- Com RM vinculada: botão "Gerar relatório final" abre a prévia do relatório — não finaliza. A devolução continua editável até o usuário conferir e clicar em "Finalizar devolução", que então grava status "finalizada", data e usuário.
 
 ## Devoluções (histórico)
 
