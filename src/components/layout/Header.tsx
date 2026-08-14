@@ -1,7 +1,7 @@
 import { LogOut, Bell } from "lucide-react";
 import { usuarioAtual } from "@/lib/mock-data";
 
-export function Header({ title, subtitle }: { title: string; subtitle?: string }) {
+export function Header({ title, subtitle }: { title: string; subtitle?: string | undefined }) {
   return (
     <header className="fixed inset-x-0 top-0 z-20 h-16 border-b border-border bg-card lg:left-[260px]">
       <div className="flex h-full items-center justify-between gap-4 px-5 lg:px-8">

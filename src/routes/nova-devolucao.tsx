@@ -39,13 +39,13 @@ function NovaDevolucao() {
   function adicionarItem(e: FormEvent) {
     e.preventDefault();
     const novos: Record<string, string> = {};
-    if (!requisicao.trim()) novos.requisicao = "Informe o número da requisição.";
-    if (!codigo.trim()) novos.codigo = "Informe o código do material.";
-    else if (!buscarMaterial(codigo)) novos.codigo = "Material não encontrado no catálogo.";
+    if (!requisicao.trim()) novos["requisicao"] = "Informe o número da requisição.";
+    if (!codigo.trim()) novos["codigo"] = "Informe o código do material.";
+    else if (!buscarMaterial(codigo)) novos["codigo"] = "Material não encontrado no catálogo.";
     const qtd = Number(quantidade);
     if (!quantidade.trim() || Number.isNaN(qtd) || qtd <= 0)
-      novos.quantidade = "Quantidade deve ser maior que zero.";
-    if (!lote.trim()) novos.lote = "Informe o lote.";
+      novos["quantidade"] = "Quantidade deve ser maior que zero.";
+    if (!lote.trim()) novos["lote"] = "Informe o lote.";
 
     setErros(novos);
     if (Object.keys(novos).length > 0) return;
@@ -87,7 +87,7 @@ function NovaDevolucao() {
         <Panel title="Dados da devolução" description="Informe a requisição e os itens devolvidos">
           <form onSubmit={adicionarItem} className="space-y-5">
             <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Número da requisição" error={erros.requisicao}>
+              <Field label="Número da requisição" error={erros["requisicao"]}>
                 <input
                   className={inputClass}
                   placeholder="REQ-2026-0000"
@@ -105,7 +105,7 @@ function NovaDevolucao() {
                 <Field
                   label="Código do material"
                   className="md:col-span-3"
-                  error={erros.codigo}
+                  error={erros["codigo"]}
                   hint="Ex.: MAT-1001"
                 >
                   <div className="relative">
@@ -126,7 +126,7 @@ function NovaDevolucao() {
                     value={descricao}
                   />
                 </Field>
-                <Field label="Quantidade" className="md:col-span-2" error={erros.quantidade}>
+                <Field label="Quantidade" className="md:col-span-2" error={erros["quantidade"]}>
                   <input
                     type="number"
                     min={1}
@@ -136,7 +136,7 @@ function NovaDevolucao() {
                     onChange={(e) => setQuantidade(e.target.value)}
                   />
                 </Field>
-                <Field label="Lote" className="md:col-span-2" error={erros.lote}>
+                <Field label="Lote" className="md:col-span-2" error={erros["lote"]}>
                   <input
                     className={inputClass}
                     placeholder="L-0000"

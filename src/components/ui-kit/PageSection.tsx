@@ -9,12 +9,12 @@ export function Panel({
   className,
   bodyClassName,
 }: {
-  title?: string;
-  description?: string;
-  action?: ReactNode;
+  title?: string | undefined;
+  description?: string | undefined;
+  action?: ReactNode | undefined;
   children: ReactNode;
-  className?: string;
-  bodyClassName?: string;
+  className?: string | undefined;
+  bodyClassName?: string | undefined;
 }) {
   return (
     <section className={cn("surface-card overflow-hidden", className)}>
@@ -40,9 +40,9 @@ export function Field({
   children,
 }: {
   label: string;
-  hint?: string;
-  error?: string;
-  className?: string;
+  hint?: string | undefined;
+  error?: string | undefined;
+  className?: string | undefined;
   children: ReactNode;
 }) {
   return (
