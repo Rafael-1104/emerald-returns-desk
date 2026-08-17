@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarDays, CalendarRange, Loader, CheckCircle2, ArrowRight } from "lucide-react";
+import { useMemo } from "react";
+import { ClipboardList, FileSpreadsheet, Hash, CheckCircle2, ArrowRight } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/ui-kit/StatCard";
 import { Panel } from "@/components/ui-kit/PageSection";
 import { DevolucoesTable } from "@/components/devolucoes/DevolucoesTable";
-import { devolucoes, indicadores } from "@/lib/mock-data";
+import { useDevolucoes } from "@/lib/devolucoes-store";
+import type { Devolucao } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -12,12 +14,12 @@ export const Route = createFileRoute("/")({
       { title: "Visão geral | Sistema de Devoluções" },
       {
         name: "description",
-        content: "Painel com indicadores e devoluções recentes de materiais.",
+        content: "Painel com indicadores do fluxo de devolução de materiais e integração com o ARECO.",
       },
       { property: "og:title", content: "Visão geral | Sistema de Devoluções" },
       {
         property: "og:description",
-        content: "Painel com indicadores e devoluções recentes de materiais.",
+        content: "Painel com indicadores do fluxo de devolução de materiais e integração com o ARECO.",
       },
     ],
   }),
@@ -25,14 +27,27 @@ export const Route = createFileRoute("/")({
 });
 
 function VisaoGeral() {
+  const devolucoes = useDevolucoes();
+  const navigate = Route.useNavigate();
+
+  const indicadores = useMemo(() => {
+    const conta = (s: Devolucao["status"]) => devolucoes.filter((d) => d.status === s).length;
+    return {
+      montagem: conta("em_montagem"),
+      csv: conta("csv_gerado"),
+      rm: conta("rm_vinculada"),
+      finalizadas: conta("finalizada"),
+    };
+  }, [devolucoes]);
+
   return (
-    <AppLayout title="Visão geral" subtitle="Resumo das devoluções de materiais">
+    <AppLayout title="Visão geral" subtitle="Resumo do fluxo de devoluções de materiais">
       <div className="mx-auto max-w-[1400px] space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Devoluções hoje" value={indicadores.hoje} hint="Registradas em 14/08/2026" icon={CalendarDays} />
-          <StatCard label="Devoluções no mês" value={indicadores.mes} hint="Agosto de 2026" icon={CalendarRange} />
-          <StatCard label="Em andamento" value={indicadores.andamento} hint="Aguardando conferência" icon={Loader} />
-          <StatCard label="Finalizadas" value={indicadores.finalizadas} hint="Conferidas no mês" icon={CheckCircle2} />
+          <StatCard label="Em montagem" value={indicadores.montagem} hint="Itens sendo adicionados" icon={ClipboardList} />
+          <StatCard label="CSV gerado" value={indicadores.csv} hint="Aguardando RM do ARECO" icon={FileSpreadsheet} />
+          <StatCard label="RM vinculada" value={indicadores.rm} hint="Prontas para o relatório" icon={Hash} />
+          <StatCard label="Finalizadas" value={indicadores.finalizadas} hint="Relatório conferido" icon={CheckCircle2} />
         </div>
 
         <Panel
@@ -48,7 +63,11 @@ function VisaoGeral() {
             </Link>
           }
         >
-          <DevolucoesTable data={devolucoes.slice(0, 5)} />
+          <DevolucoesTable
+            data={devolucoes.slice(0, 5)}
+            onView={(d) => void navigate({ to: "/nova-devolucao", search: { id: d.id } })}
+            onReport={(d) => void navigate({ to: "/relatorios", search: { id: d.id } })}
+          />
         </Panel>
       </div>
     </AppLayout>
