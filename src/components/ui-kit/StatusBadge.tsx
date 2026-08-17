@@ -2,10 +2,10 @@ import { statusLabels, type DevolucaoStatus } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 const styles: Record<DevolucaoStatus, string> = {
-  finalizada: "bg-primary/12 text-primary-dark border-primary/25",
-  em_andamento: "bg-info/10 text-info border-info/25",
-  pendente: "bg-warning/15 text-warning-foreground border-warning/30",
-  cancelada: "bg-destructive/10 text-destructive border-destructive/25",
+  em_montagem: "bg-warning/15 text-warning-foreground border-warning/30",
+  csv_gerado: "bg-info/10 text-info border-info/25",
+  rm_vinculada: "bg-primary/12 text-primary-dark border-primary/25",
+  finalizada: "bg-primary/20 text-primary-dark border-primary/40",
 };
 
 export function StatusBadge({ status }: { status: DevolucaoStatus }) {
