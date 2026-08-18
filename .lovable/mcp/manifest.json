@@ -1,0 +1,267 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.2",
+  "path": "/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "sistema-de-devolucoes",
+      "version": "0.1.0",
+      "title": "Sistema de Devoluções"
+    },
+    "tools": [
+      {
+        "name": "listar_materiais",
+        "title": "Listar materiais",
+        "description": "Lista o catálogo de materiais do Sistema de Devoluções, com filtro opcional por texto (código ou descrição).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "busca": {
+              "description": "Texto para filtrar por código ou descrição.",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "total": {
+              "type": "number"
+            },
+            "materiais": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "codigo": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "codigo",
+                  "descricao"
+                ]
+              }
+            }
+          },
+          "required": [
+            "total",
+            "materiais"
+          ]
+        }
+      },
+      {
+        "name": "buscar_material",
+        "title": "Buscar material por código",
+        "description": "Retorna a descrição do material a partir do código, como na tela de Nova devolução.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "codigo": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Código do material, ex.: 123456."
+            }
+          },
+          "required": [
+            "codigo"
+          ]
+        },
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "material": {
+              "type": "object",
+              "properties": {
+                "codigo": {
+                  "type": "string"
+                },
+                "descricao": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "codigo",
+                "descricao"
+              ]
+            }
+          },
+          "required": [
+            "material"
+          ]
+        }
+      },
+      {
+        "name": "montar_csv_areco",
+        "title": "Montar CSV para o ARECO",
+        "description": "Gera o conteúdo do CSV de importação no ARECO (Codigo;Quantidade) somando os volumes de cada item.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "itens": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "codigo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Código do material."
+                  },
+                  "volumes": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "description": "Quantidade de cada volume do item; o total é a soma."
+                  }
+                },
+                "required": [
+                  "codigo",
+                  "volumes"
+                ]
+              },
+              "description": "Itens da devolução com seus volumes."
+            }
+          },
+          "required": [
+            "itens"
+          ]
+        },
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "csv": {
+              "type": "string"
+            },
+            "linhas": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "codigo": {
+                    "type": "string"
+                  },
+                  "quantidade": {
+                    "type": "number"
+                  },
+                  "descricao": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "codigo",
+                  "quantidade",
+                  "descricao"
+                ]
+              }
+            },
+            "quantidadeTotal": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "csv",
+            "linhas",
+            "quantidadeTotal"
+          ]
+        }
+      },
+      {
+        "name": "explicar_fluxo_devolucao",
+        "title": "Explicar o fluxo de devolução",
+        "description": "Descreve as etapas e os status do processo de devolução de materiais (montagem, CSV do ARECO, RM e finalização).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Status específico a explicar; se omitido, retorna o fluxo completo.",
+              "type": "string",
+              "enum": [
+                "em_montagem",
+                "csv_gerado",
+                "rm_vinculada",
+                "finalizada"
+              ]
+            }
+          }
+        },
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "etapas": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "rotulo": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "status",
+                  "rotulo",
+                  "descricao"
+                ]
+              }
+            }
+          },
+          "required": [
+            "etapas"
+          ]
+        }
+      }
+    ]
+  }
+}
