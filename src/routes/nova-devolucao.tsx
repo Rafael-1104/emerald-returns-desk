@@ -39,7 +39,7 @@ import {
 
 export const Route = createFileRoute("/nova-devolucao")({
   validateSearch: (search: Record<string, unknown>) => ({
-    id: typeof search.id === "string" ? search.id : undefined,
+    id: typeof search["id"] === "string" ? (search["id"] as string) : undefined,
   }),
   head: () => ({
     meta: [
