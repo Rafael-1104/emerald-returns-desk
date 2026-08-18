@@ -31,7 +31,37 @@
             }
           }
         },
-        "outputSchema": null
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "total": {
+              "type": "number"
+            },
+            "materiais": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "codigo": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "codigo",
+                  "descricao"
+                ]
+              }
+            }
+          },
+          "required": [
+            "total",
+            "materiais"
+          ]
+        }
       },
       {
         "name": "buscar_material",
@@ -56,7 +86,30 @@
             "codigo"
           ]
         },
-        "outputSchema": null
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "material": {
+              "type": "object",
+              "properties": {
+                "codigo": {
+                  "type": "string"
+                },
+                "descricao": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "codigo",
+                "descricao"
+              ]
+            }
+          },
+          "required": [
+            "material"
+          ]
+        }
       },
       {
         "name": "montar_csv_areco",
@@ -105,7 +158,52 @@
             "itens"
           ]
         },
-        "outputSchema": null
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "csv": {
+              "type": "string"
+            },
+            "linhas": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "codigo": {
+                    "type": "string"
+                  },
+                  "quantidade": {
+                    "type": "number"
+                  },
+                  "descricao": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "codigo",
+                  "quantidade",
+                  "descricao"
+                ]
+              }
+            },
+            "quantidadeTotal": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "csv",
+            "linhas",
+            "quantidadeTotal"
+          ]
+        }
       },
       {
         "name": "explicar_fluxo_devolucao",
@@ -132,7 +230,37 @@
             }
           }
         },
-        "outputSchema": null
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "etapas": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "rotulo": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "status",
+                  "rotulo",
+                  "descricao"
+                ]
+              }
+            }
+          },
+          "required": [
+            "etapas"
+          ]
+        }
       }
     ]
   }

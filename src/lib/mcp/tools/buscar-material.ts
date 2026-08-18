@@ -7,6 +7,7 @@ export default defineTool({
   title: "Buscar material por código",
   description: "Retorna a descrição do material a partir do código, como na tela de Nova devolução.",
   inputSchema: { codigo: z.string().trim().min(1).describe("Código do material, ex.: 123456.") },
+  outputSchema: { material: z.object({ codigo: z.string(), descricao: z.string() }) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: ({ codigo }) => {
     const material = buscarMaterial(codigo);

@@ -18,6 +18,13 @@ export default defineTool({
   inputSchema: {
     itens: z.array(itemSchema).min(1).describe("Itens da devolução com seus volumes."),
   },
+  outputSchema: {
+    csv: z.string(),
+    linhas: z.array(
+      z.object({ codigo: z.string(), quantidade: z.number(), descricao: z.string().nullable() }),
+    ),
+    quantidadeTotal: z.number(),
+  },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: ({ itens }) => {
     const linhas = itens.map((item) => {

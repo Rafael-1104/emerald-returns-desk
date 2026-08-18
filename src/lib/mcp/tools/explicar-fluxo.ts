@@ -35,6 +35,9 @@ export default defineTool({
       .optional()
       .describe("Status específico a explicar; se omitido, retorna o fluxo completo."),
   },
+  outputSchema: {
+    etapas: z.array(z.object({ status: z.string(), rotulo: z.string(), descricao: z.string() })),
+  },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: ({ status }) => {
     const selecionadas = status ? etapas.filter((e) => e.status === status) : etapas;

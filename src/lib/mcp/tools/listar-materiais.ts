@@ -10,6 +10,10 @@ export default defineTool({
   inputSchema: {
     busca: z.string().trim().optional().describe("Texto para filtrar por código ou descrição."),
   },
+  outputSchema: {
+    total: z.number(),
+    materiais: z.array(z.object({ codigo: z.string(), descricao: z.string() })),
+  },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: ({ busca }) => {
     const termo = busca?.toLowerCase() ?? "";
