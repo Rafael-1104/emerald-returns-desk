@@ -36,6 +36,7 @@ export const navGroups: Group[] = [
     items: [
       { label: "Usuários", to: "/usuarios", icon: Users },
       { label: "Configurações", to: "/configuracoes", icon: Settings },
+      { label: "Diagnóstico", to: "/diagnostico", icon: PlugZap },
     ],
   },
 ];
