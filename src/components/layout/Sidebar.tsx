@@ -6,6 +6,7 @@ import {
   FileText,
   Users,
   Settings,
+  PlugZap,
   LogOut,
   type LucideIcon,
 } from "lucide-react";
