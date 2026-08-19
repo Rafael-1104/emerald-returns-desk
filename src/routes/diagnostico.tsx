@@ -34,13 +34,12 @@ function Diagnostico() {
 
     for (const tabela of TABELAS) {
       const { data, count, error } = await supabase.from(tabela).select("*", { count: "exact" }).limit(1);
-      saida.push({
-        nome: tabela,
-        ok: !error,
-        detalhe: error
-          ? `${error.code || "erro"}: ${error.message || "acesso negado"}${error.hint ? ` — ${error.hint}` : ""}`
-          : `acessível — ${count ?? data?.length ?? 0} registro(s) visível(is)`,
-      });
+      let detalhe = `acessível — ${count ?? data?.length ?? 0} registro(s) visível(is)`;
+      if (error) {
+        detalhe = [error.code, error.message, error.hint].filter(Boolean).join(" — ");
+        if (!error.message) detalhe = await detalharErro(tabela);
+      }
+      saida.push({ nome: tabela, ok: !error, detalhe });
     }
     setResultados(saida);
 
