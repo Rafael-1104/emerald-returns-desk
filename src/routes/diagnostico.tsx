@@ -33,11 +33,13 @@ function Diagnostico() {
     const saida: Resultado[] = [];
 
     for (const tabela of TABELAS) {
-      const { count, error } = await supabase.from(tabela).select("*", { count: "exact", head: true });
+      const { data, count, error } = await supabase.from(tabela).select("*", { count: "exact" }).limit(1);
       saida.push({
         nome: tabela,
         ok: !error,
-        detalhe: error ? `${error.code ?? "erro"}: ${error.message}` : `acessível — ${count ?? 0} registro(s) visível(is)`,
+        detalhe: error
+          ? `${error.code || "erro"}: ${error.message || "acesso negado"}${error.hint ? ` — ${error.hint}` : ""}`
+          : `acessível — ${count ?? data?.length ?? 0} registro(s) visível(is)`,
       });
     }
     setResultados(saida);
