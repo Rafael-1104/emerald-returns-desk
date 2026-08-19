@@ -22,6 +22,18 @@ const TABELAS = ["usuarios", "materiais", "devolucoes", "itens_devolucao", "volu
 
 type Resultado = { nome: string; ok: boolean; detalhe: string };
 
+/** Alguns erros de permissão chegam sem mensagem pelo cliente; busca o detalhe bruto da API. */
+async function detalharErro(tabela: string) {
+  try {
+    const chave = import.meta.env['VITE_APP_SUPABASE_PUBLISHABLE_KEY'] as string;
+    const res = await fetch(`${supabaseUrl}/rest/v1/${tabela}?select=*&limit=1`, { headers: { apikey: chave } });
+    const corpo = (await res.json()) as { code?: string; message?: string; hint?: string };
+    return [corpo.code, corpo.message, corpo.hint].filter(Boolean).join(" — ") || `HTTP ${res.status}`;
+  } catch {
+    return "falha de rede ao consultar a tabela";
+  }
+}
+
 function Diagnostico() {
   const [carregando, setCarregando] = useState(false);
   const [resultados, setResultados] = useState<Resultado[]>([]);
