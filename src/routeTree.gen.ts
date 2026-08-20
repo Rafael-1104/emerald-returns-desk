@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as DevolucoesRouteImport } from './routes/devolucoes'
 import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as NovaDevolucaoRouteImport } from './routes/nova-devolucao'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
@@ -37,6 +38,11 @@ const DiagnosticoRoute = DiagnosticoRouteImport.update({
   path: '/diagnostico',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NovaDevolucaoRoute = NovaDevolucaoRouteImport.update({
   id: '/nova-devolucao',
   path: '/nova-devolucao',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof ConfiguracoesRoute
   '/devolucoes': typeof DevolucoesRoute
   '/diagnostico': typeof DiagnosticoRoute
+  '/login': typeof LoginRoute
   '/nova-devolucao': typeof NovaDevolucaoRoute
   '/relatorios': typeof RelatoriosRoute
   '/usuarios': typeof UsuariosRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRoute
   '/devolucoes': typeof DevolucoesRoute
   '/diagnostico': typeof DiagnosticoRoute
+  '/login': typeof LoginRoute
   '/nova-devolucao': typeof NovaDevolucaoRoute
   '/relatorios': typeof RelatoriosRoute
   '/usuarios': typeof UsuariosRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRoute
   '/devolucoes': typeof DevolucoesRoute
   '/diagnostico': typeof DiagnosticoRoute
+  '/login': typeof LoginRoute
   '/nova-devolucao': typeof NovaDevolucaoRoute
   '/relatorios': typeof RelatoriosRoute
   '/usuarios': typeof UsuariosRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/devolucoes'
     | '/diagnostico'
+    | '/login'
     | '/nova-devolucao'
     | '/relatorios'
     | '/usuarios'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/devolucoes'
     | '/diagnostico'
+    | '/login'
     | '/nova-devolucao'
     | '/relatorios'
     | '/usuarios'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/devolucoes'
     | '/diagnostico'
+    | '/login'
     | '/nova-devolucao'
     | '/relatorios'
     | '/usuarios'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   DevolucoesRoute: typeof DevolucoesRoute
   DiagnosticoRoute: typeof DiagnosticoRoute
+  LoginRoute: typeof LoginRoute
   NovaDevolucaoRoute: typeof NovaDevolucaoRoute
   RelatoriosRoute: typeof RelatoriosRoute
   UsuariosRoute: typeof UsuariosRoute
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DiagnosticoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/nova-devolucao': {
       id: '/nova-devolucao'
       path: '/nova-devolucao'
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracoesRoute: ConfiguracoesRoute,
   DevolucoesRoute: DevolucoesRoute,
   DiagnosticoRoute: DiagnosticoRoute,
+  LoginRoute: LoginRoute,
   NovaDevolucaoRoute: NovaDevolucaoRoute,
   RelatoriosRoute: RelatoriosRoute,
   UsuariosRoute: UsuariosRoute,

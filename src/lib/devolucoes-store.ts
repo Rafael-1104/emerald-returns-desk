@@ -1,22 +1,43 @@
-import { useEffect, useSyncExternalStore } from "react";
-import {
-  descricaoMaterial,
-  devolucoesSeed,
-  usuarioAtual,
-  type Devolucao,
-  type ItemDevolucao,
-  type VolumeItem,
-} from "@/lib/mock-data";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { atualizarFlex, campo, inserirFlex, numero, texto, type Payload } from "@/lib/supabase-flex";
+import { buscarDescricoes } from "@/lib/materiais";
+import type { Devolucao, DevolucaoStatus, ItemDevolucao, VolumeItem } from "@/lib/mock-data";
 
 /**
- * Repositório de devoluções (mock).
- * Toda a leitura/escrita passa por aqui — para migrar ao backend basta trocar
- * o corpo destas funções por chamadas ao banco, mantendo as assinaturas.
+ * Camada única de acesso às devoluções — 100% Supabase (projeto existente do cliente).
+ * Nenhum dado é persistido em localStorage e nenhuma estrutura do banco é alterada.
  */
 
-const STORAGE_KEY = "sistema-devolucoes:v1";
+const STATUS_VALIDOS: DevolucaoStatus[] = ["em_montagem", "csv_gerado", "rm_vinculada", "finalizada"];
 
-let state: Devolucao[] = devolucoesSeed;
+const ALIAS_DEVOLUCAO = {
+  criado_por: ["usuario_id", "user_id", "criado_por_id"],
+  usuario_id: ["user_id", "criado_por_id"],
+  status: [],
+  rm: ["numero_rm", "rm_numero"],
+  csv_gerado_em: [],
+  finalizada_em: ["finalizado_em"],
+};
+
+const ALIAS_ITEM = {
+  material_codigo: ["codigo", "codigo_material"],
+  codigo: ["codigo_material"],
+  descricao: ["descricao_material"],
+  quantidade_total: ["quantidade"],
+  lote: [],
+  devolucao_id: [],
+};
+
+const ALIAS_VOLUME = {
+  item_id: ["item_devolucao_id", "itens_devolucao_id"],
+  numero: ["numero_volume", "volume"],
+  quantidade: ["qtd", "quantidade_volume"],
+};
+
+let state: Devolucao[] = [];
+let carregando = false;
 let carregado = false;
 const listeners = new Set<() => void>();
 
@@ -24,38 +45,139 @@ function emit() {
   for (const l of listeners) l();
 }
 
-function persistir() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    /* ignora falha de storage */
-  }
-}
-
 function setState(next: Devolucao[]) {
   state = next;
-  persistir();
   emit();
+}
+
+/* ------------------------------------------------------------------ */
+/* Mapeamento banco -> domínio                                         */
+/* ------------------------------------------------------------------ */
+
+function mapVolume(linha: Payload): VolumeItem {
+  return {
+    id: String(campo(linha, ["id"]) ?? Math.random()),
+    numero: numero(campo(linha, ["numero", "numero_volume", "volume"])),
+    quantidade: numero(campo(linha, ["quantidade", "qtd", "quantidade_volume"])),
+  };
+}
+
+function mapItem(linha: Payload, volumes: VolumeItem[], descricoes: Map<string, string>): ItemDevolucao {
+  const codigo = texto(campo(linha, ["material_codigo", "codigo", "codigo_material"])) ?? "";
+  return {
+    id: String(campo(linha, ["id"]) ?? ""),
+    materialCodigo: codigo,
+    descricao: texto(campo(linha, ["descricao", "descricao_material"])) ?? descricoes.get(codigo) ?? "",
+    lote: texto(campo(linha, ["lote"])) ?? "",
+    volumes: volumes.sort((a, b) => a.numero - b.numero),
+  };
+}
+
+function mapDevolucao(linha: Payload, itens: ItemDevolucao[], nomes: Map<string, string>): Devolucao {
+  const statusBruto = texto(campo(linha, ["status"])) ?? "em_montagem";
+  const status = (STATUS_VALIDOS as string[]).includes(statusBruto)
+    ? (statusBruto as DevolucaoStatus)
+    : "em_montagem";
+  const autorId = texto(campo(linha, ["criado_por", "usuario_id", "user_id", "criado_por_id"])) ?? "";
+
+  return {
+    id: String(campo(linha, ["id"]) ?? ""),
+    identificador: texto(campo(linha, ["identificador", "codigo", "numero"])) ?? String(campo(linha, ["id"]) ?? ""),
+    rm: texto(campo(linha, ["rm", "numero_rm", "rm_numero"])),
+    status,
+    itens,
+    criadoPor: nomes.get(autorId) ?? (autorId ? "Usuário" : "—"),
+    criadoEm: texto(campo(linha, ["criado_em", "created_at", "data_criacao"])) ?? new Date().toISOString(),
+    alteradoPor: null,
+    alteradoEm: texto(campo(linha, ["alterado_em", "updated_at"])),
+    csvGeradoEm: texto(campo(linha, ["csv_gerado_em"])),
+    csvDesatualizado: Boolean(campo(linha, ["csv_desatualizado"])),
+    rmVinculadaEm: texto(campo(linha, ["rm_vinculada_em"])),
+    rmVinculadaPor: null,
+    finalizadaEm: texto(campo(linha, ["finalizada_em", "finalizado_em"])),
+    finalizadaPor: null,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Carregamento                                                        */
+/* ------------------------------------------------------------------ */
+
+export async function recarregar(): Promise<void> {
+  if (carregando) return;
+  carregando = true;
+  try {
+    const { data: sessao } = await supabase.auth.getSession();
+    if (!sessao.session) {
+      setState([]);
+      return;
+    }
+
+    const { data: devsRaw, error } = await supabase.from("devolucoes").select("*");
+    if (error) throw error;
+    const devolucoes = (devsRaw ?? []) as Payload[];
+    const ids = devolucoes.map((d) => String(campo(d, ["id"])));
+
+    let itensRaw: Payload[] = [];
+    if (ids.length > 0) {
+      const { data, error: erroItens } = await supabase.from("itens_devolucao").select("*").in("devolucao_id", ids);
+      if (erroItens) throw erroItens;
+      itensRaw = (data ?? []) as Payload[];
+    }
+
+    const itemIds = itensRaw.map((i) => String(campo(i, ["id"])));
+    let volumesRaw: Payload[] = [];
+    if (itemIds.length > 0) {
+      const { data, error: erroVol } = await supabase.from("volumes_item").select("*").in("item_id", itemIds);
+      if (erroVol) throw erroVol;
+      volumesRaw = (data ?? []) as Payload[];
+    }
+
+    const descricoes = await buscarDescricoes(
+      itensRaw.map((i) => texto(campo(i, ["material_codigo", "codigo", "codigo_material"])) ?? ""),
+    );
+
+    const nomes = new Map<string, string>();
+    const { data: usuariosRaw } = await supabase.from("usuarios").select("*");
+    for (const u of (usuariosRaw ?? []) as Payload[]) {
+      const id = texto(campo(u, ["id"]));
+      const nome = texto(campo(u, ["nome", "nome_completo", "name", "email"]));
+      if (id && nome) nomes.set(id, nome);
+    }
+
+    const volumesPorItem = new Map<string, VolumeItem[]>();
+    for (const v of volumesRaw) {
+      const itemId = String(campo(v, ["item_id", "item_devolucao_id", "itens_devolucao_id"]) ?? "");
+      const lista = volumesPorItem.get(itemId) ?? [];
+      lista.push(mapVolume(v));
+      volumesPorItem.set(itemId, lista);
+    }
+
+    const itensPorDevolucao = new Map<string, ItemDevolucao[]>();
+    for (const i of itensRaw) {
+      const devId = String(campo(i, ["devolucao_id"]) ?? "");
+      const lista = itensPorDevolucao.get(devId) ?? [];
+      lista.push(mapItem(i, volumesPorItem.get(String(campo(i, ["id"]))) ?? [], descricoes));
+      itensPorDevolucao.set(devId, lista);
+    }
+
+    const mapeadas = devolucoes
+      .map((d) => mapDevolucao(d, itensPorDevolucao.get(String(campo(d, ["id"]))) ?? [], nomes))
+      .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
+
+    setState(mapeadas);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    toast.error(`Falha ao carregar devoluções: ${msg}`);
+  } finally {
+    carregando = false;
+  }
 }
 
 export function carregar() {
   if (carregado || typeof window === "undefined") return;
   carregado = true;
-  try {
-    const bruto = window.localStorage.getItem(STORAGE_KEY);
-    if (bruto) {
-      const dados = JSON.parse(bruto) as Devolucao[];
-      if (Array.isArray(dados)) {
-        state = dados;
-        emit();
-        return;
-      }
-    }
-  } catch {
-    /* ignora dados inválidos */
-  }
-  persistir();
+  void recarregar();
 }
 
 function subscribe(listener: () => void) {
@@ -64,9 +186,9 @@ function subscribe(listener: () => void) {
 }
 
 const getSnapshot = () => state;
-const getServerSnapshot = () => devolucoesSeed;
+const vazio: Devolucao[] = [];
+const getServerSnapshot = () => vazio;
 
-/** Hook de leitura reativa da lista completa. */
 export function useDevolucoes() {
   useEffect(() => {
     carregar();
@@ -79,147 +201,164 @@ export function useDevolucao(id: string | undefined) {
   return lista.find((d) => d.id === id) ?? null;
 }
 
-/* ------------------------------------------------------------------ */
-/* Helpers internos                                                    */
-/* ------------------------------------------------------------------ */
-
-const uid = () => Math.random().toString(36).slice(2, 10);
-const agora = () => new Date().toISOString();
-
-function proximoIdentificador(lista: Devolucao[]) {
-  const ano = new Date().getFullYear();
-  const numeros = lista
-    .map((d) => Number(d.identificador.split("-")[2] ?? 0))
-    .filter((n) => Number.isFinite(n));
-  const proximo = (numeros.length ? Math.max(...numeros) : 0) + 1;
-  return `DEV-${ano}-${String(proximo).padStart(5, "0")}`;
-}
-
-/** Atualiza uma devolução registrando rastreabilidade. `invalidaCsv` marca o CSV como desatualizado. */
-function atualizar(id: string, invalidaCsv: boolean, fn: (d: Devolucao) => Devolucao) {
-  setState(
-    state.map((d) => {
-      if (d.id !== id) return d;
-      const atualizado = fn(d);
-      return {
-        ...atualizado,
-        alteradoPor: usuarioAtual.nome,
-        alteradoEm: agora(),
-        csvDesatualizado: invalidaCsv && atualizado.csvGeradoEm ? true : atualizado.csvDesatualizado,
-      };
-    }),
-  );
+/** Força uma nova leitura do Supabase (usado após login). */
+export function useRecarregarDevolucoes() {
+  return useCallback(() => {
+    void recarregar();
+  }, []);
 }
 
 export const podeEditar = (d: Devolucao) => d.status !== "finalizada";
 
 /* ------------------------------------------------------------------ */
-/* API do repositório                                                  */
+/* Mutações                                                            */
 /* ------------------------------------------------------------------ */
 
+async function comErro<T>(acao: () => Promise<T>): Promise<T | null> {
+  try {
+    return await acao();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    toast.error(msg);
+    return null;
+  }
+}
+
 export async function listarDevolucoes() {
-  carregar();
+  await recarregar();
   return state;
 }
 
-export async function criarDevolucao(): Promise<Devolucao> {
-  carregar();
-  const nova: Devolucao = {
-    id: uid(),
-    identificador: proximoIdentificador(state),
-    rm: null,
-    status: "em_montagem",
-    itens: [],
-    criadoPor: usuarioAtual.nome,
-    criadoEm: agora(),
-    alteradoPor: null,
-    alteradoEm: null,
-    csvGeradoEm: null,
-    csvDesatualizado: false,
-    rmVinculadaEm: null,
-    rmVinculadaPor: null,
-    finalizadaEm: null,
-    finalizadaPor: null,
-  };
-  setState([nova, ...state]);
-  return nova;
+export async function criarDevolucao(): Promise<Devolucao | null> {
+  return comErro(async () => {
+    const { data: sessao } = await supabase.auth.getSession();
+    const userId = sessao.session?.user.id ?? null;
+
+    const [linha] = await inserirFlex(
+      "devolucoes",
+      [{ status: "em_montagem", criado_por: userId }],
+      ALIAS_DEVOLUCAO,
+    );
+    if (!linha) throw new Error("Devolução não criada.");
+    await recarregar();
+    const id = String(campo(linha, ["id"]));
+    return state.find((d) => d.id === id) ?? mapDevolucao(linha, [], new Map());
+  });
+}
+
+async function gravarVolumes(itemId: string, volumes: { numero: number; quantidade: number }[]) {
+  if (volumes.length === 0) return;
+  await inserirFlex(
+    "volumes_item",
+    volumes.map((v) => ({ item_id: itemId, numero: v.numero, quantidade: v.quantidade })),
+    ALIAS_VOLUME,
+  );
 }
 
 export async function adicionarItem(
   devolucaoId: string,
-  dados: { materialCodigo: string; lote: string; volumes: { numero: number; quantidade: number }[] },
+  dados: { materialCodigo: string; descricao?: string; lote: string; volumes: { numero: number; quantidade: number }[] },
 ) {
-  const item: ItemDevolucao = {
-    id: uid(),
-    materialCodigo: dados.materialCodigo,
-    descricao: descricaoMaterial(dados.materialCodigo),
-    lote: dados.lote,
-    volumes: dados.volumes.map<VolumeItem>((v) => ({ id: uid(), numero: v.numero, quantidade: v.quantidade })),
-  };
-  // Adição de item altera o conteúdo do CSV.
-  atualizar(devolucaoId, true, (d) => ({ ...d, itens: [...d.itens, item] }));
+  await comErro(async () => {
+    const total = dados.volumes.reduce((acc, v) => acc + v.quantidade, 0);
+    const [linha] = await inserirFlex(
+      "itens_devolucao",
+      [
+        {
+          devolucao_id: devolucaoId,
+          material_codigo: dados.materialCodigo,
+          descricao: dados.descricao ?? null,
+          lote: dados.lote,
+          quantidade_total: total,
+        },
+      ],
+      ALIAS_ITEM,
+    );
+    if (!linha) throw new Error("Item não criado.");
+    await gravarVolumes(String(campo(linha, ["id"])), dados.volumes);
+    await recarregar();
+  });
 }
 
 export async function atualizarItem(
-  devolucaoId: string,
+  _devolucaoId: string,
   itemId: string,
-  dados: { materialCodigo: string; lote: string; volumes: { numero: number; quantidade: number }[] },
+  dados: { materialCodigo: string; descricao?: string; lote: string; volumes: { numero: number; quantidade: number }[] },
 ) {
-  const anterior = state.find((d) => d.id === devolucaoId)?.itens.find((i) => i.id === itemId);
-  const mudouCodigo = anterior ? anterior.materialCodigo !== dados.materialCodigo : true;
-  const mudouVolumes = anterior
-    ? anterior.volumes.length !== dados.volumes.length ||
-      anterior.volumes.some((v, i) => v.quantidade !== dados.volumes[i]?.quantidade)
-    : true;
-  // Alteração somente de lote NÃO invalida o CSV (lote não é enviado ao ARECO).
-  atualizar(devolucaoId, mudouCodigo || mudouVolumes, (d) => ({
-    ...d,
-    itens: d.itens.map((i) =>
-      i.id === itemId
-        ? {
-            ...i,
-            materialCodigo: dados.materialCodigo,
-            descricao: descricaoMaterial(dados.materialCodigo),
-            lote: dados.lote,
-            volumes: dados.volumes.map<VolumeItem>((v) => ({ id: uid(), numero: v.numero, quantidade: v.quantidade })),
-          }
-        : i,
-    ),
-  }));
+  await comErro(async () => {
+    const total = dados.volumes.reduce((acc, v) => acc + v.quantidade, 0);
+    await atualizarFlex(
+      "itens_devolucao",
+      itemId,
+      {
+        material_codigo: dados.materialCodigo,
+        descricao: dados.descricao ?? null,
+        lote: dados.lote,
+        quantidade_total: total,
+      },
+      ALIAS_ITEM,
+    );
+    const { error } = await supabase.from("volumes_item").delete().eq("item_id", itemId);
+    if (error) throw error;
+    await gravarVolumes(itemId, dados.volumes);
+    await recarregar();
+  });
 }
 
-export async function removerItem(devolucaoId: string, itemId: string) {
-  atualizar(devolucaoId, true, (d) => ({ ...d, itens: d.itens.filter((i) => i.id !== itemId) }));
+export async function removerItem(_devolucaoId: string, itemId: string) {
+  await comErro(async () => {
+    await supabase.from("volumes_item").delete().eq("item_id", itemId);
+    const { error } = await supabase.from("itens_devolucao").delete().eq("id", itemId);
+    if (error) throw error;
+    await recarregar();
+  });
 }
 
 export async function registrarCsvGerado(devolucaoId: string) {
-  atualizar(devolucaoId, false, (d) => ({
-    ...d,
-    csvGeradoEm: agora(),
-    csvDesatualizado: false,
-    status: d.status === "em_montagem" ? "csv_gerado" : d.status,
-  }));
+  await comErro(async () => {
+    await atualizarFlex(
+      "devolucoes",
+      devolucaoId,
+      { status: "csv_gerado", csv_gerado_em: new Date().toISOString() },
+      ALIAS_DEVOLUCAO,
+    );
+    await recarregar();
+  });
 }
 
 export async function vincularRm(devolucaoId: string, rm: string) {
-  atualizar(devolucaoId, false, (d) => ({
-    ...d,
-    rm,
-    status: d.status === "finalizada" ? d.status : "rm_vinculada",
-    rmVinculadaEm: agora(),
-    rmVinculadaPor: usuarioAtual.nome,
-  }));
+  await comErro(async () => {
+    await atualizarFlex(
+      "devolucoes",
+      devolucaoId,
+      { rm, status: "rm_vinculada", rm_vinculada_em: new Date().toISOString() },
+      ALIAS_DEVOLUCAO,
+    );
+    await recarregar();
+  });
 }
 
 export async function finalizarDevolucao(devolucaoId: string) {
-  atualizar(devolucaoId, false, (d) => ({
-    ...d,
-    status: "finalizada",
-    finalizadaEm: agora(),
-    finalizadaPor: usuarioAtual.nome,
-  }));
+  await comErro(async () => {
+    await atualizarFlex(
+      "devolucoes",
+      devolucaoId,
+      { status: "finalizada", finalizada_em: new Date().toISOString() },
+      ALIAS_DEVOLUCAO,
+    );
+    await recarregar();
+  });
 }
 
 export async function removerDevolucao(devolucaoId: string) {
-  setState(state.filter((d) => d.id !== devolucaoId));
+  await comErro(async () => {
+    const alvo = state.find((d) => d.id === devolucaoId);
+    for (const item of alvo?.itens ?? []) {
+      await supabase.from("volumes_item").delete().eq("item_id", item.id);
+    }
+    await supabase.from("itens_devolucao").delete().eq("devolucao_id", devolucaoId);
+    const { error } = await supabase.from("devolucoes").delete().eq("id", devolucaoId);
+    if (error) throw error;
+    await recarregar();
+  });
 }
