@@ -30,14 +30,15 @@ export function Header({ title, subtitle }: { title: string; subtitle?: string |
 
           <div className="flex items-center gap-3 border-l border-border pl-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-              {usuarioAtual.iniciais}
+              {iniciais}
             </div>
             <div className="hidden leading-tight sm:block">
-              <p className="text-sm font-semibold text-foreground">{usuarioAtual.nome}</p>
-              <p className="text-xs text-muted-foreground">{usuarioAtual.cargo}</p>
+              <p className="text-sm font-semibold text-foreground">{nomeExibicao}</p>
+              <p className="text-xs text-muted-foreground">{perfil?.cargo ?? usuario?.email}</p>
             </div>
             <button
               type="button"
+              onClick={() => void sairAgora()}
               className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
             >
               <LogOut className="h-4 w-4" />
