@@ -76,6 +76,7 @@ function NovaDevolucao() {
 
   async function iniciar() {
     const nova = await criarDevolucao();
+    if (!nova) return;
     toast.success(`Devolução ${nova.identificador} iniciada`);
     void navigate({ to: "/nova-devolucao", search: { id: nova.id } });
   }
