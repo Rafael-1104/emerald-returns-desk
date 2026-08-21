@@ -1,7 +1,16 @@
 import { LogOut, Bell } from "lucide-react";
-import { usuarioAtual } from "@/lib/mock-data";
+import { useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@/lib/auth";
 
 export function Header({ title, subtitle }: { title: string; subtitle?: string | undefined }) {
+  const { nomeExibicao, iniciais, perfil, usuario, sair } = useAuth();
+  const navigate = useNavigate();
+
+  async function sairAgora() {
+    await sair();
+    void navigate({ to: "/login", replace: true });
+  }
+
   return (
     <header className="fixed inset-x-0 top-0 z-20 h-16 border-b border-border bg-card lg:left-[260px]">
       <div className="flex h-full items-center justify-between gap-4 px-5 lg:px-8">
