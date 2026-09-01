@@ -164,10 +164,10 @@ function EditorDevolucao({ devolucaoId }: { devolucaoId: string }) {
           if (!vivo) return;
           setMaterialEncontrado(material ? material.codigo : null);
           setDescricao(material?.descricao ?? "");
-          setErros((atual) => ({
-            ...atual,
-            codigo: material ? undefined : "Código não encontrado no catálogo de materiais.",
-          }));
+          setErros((atual) => {
+            const { codigo: _antigo, ...resto } = atual;
+            return material ? resto : { ...resto, codigo: "Código não encontrado no catálogo de materiais." };
+          });
         })
         .catch((e: unknown) => {
           if (!vivo) return;
@@ -192,6 +192,7 @@ function EditorDevolucao({ devolucaoId }: { devolucaoId: string }) {
 
   function limpar() {
     setCodigo("");
+    setMaterialEncontrado(null);
     setLote("");
     setVolumes([{ numero: 1, quantidade: "" }]);
     setEditandoId(null);
@@ -209,14 +210,15 @@ function EditorDevolucao({ devolucaoId }: { devolucaoId: string }) {
   async function salvarItem() {
     const proximosErros: typeof erros = {};
     if (!codigo.trim()) proximosErros.codigo = "Informe o código do material.";
-    else if (!buscarMaterial(codigo)) proximosErros.codigo = "Código não encontrado no catálogo.";
+    else if (buscandoMaterial) proximosErros.codigo = "Aguarde a consulta do material.";
+    else if (!materialEncontrado) proximosErros.codigo = "Código não encontrado no catálogo de materiais.";
     if (!lote.trim()) proximosErros.lote = "Informe o lote.";
     if (somaVolumes(volumes) <= 0) proximosErros.volumes = "Informe ao menos um volume com quantidade maior que zero.";
     setErros(proximosErros);
     if (Object.keys(proximosErros).length > 0) return;
 
     const dados = {
-      materialCodigo: codigo.trim(),
+      materialCodigo: materialEncontrado ?? codigo.trim(),
       lote: lote.trim(),
       volumes: volumes
         .map((v) => ({ numero: v.numero, quantidade: Number(v.quantidade) }))
