@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { UserPlus, Pencil } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Panel } from "@/components/ui-kit/PageSection";
-import { usuarios } from "@/lib/mock-data";
+import { useUsuarios } from "@/lib/usuarios";
 
 export const Route = createFileRoute("/usuarios")({
   head: () => ({
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/usuarios")({
 });
 
 function Usuarios() {
+  const { usuarios } = useUsuarios();
   return (
     <AppLayout title="Usuários" subtitle="Cadastro de usuários e perfis de acesso">
       <div className="mx-auto max-w-[1200px]">

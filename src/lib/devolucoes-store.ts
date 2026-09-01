@@ -18,8 +18,16 @@ const ALIAS_DEVOLUCAO = {
   status: [],
   rm: ["numero_rm", "rm_numero"],
   csv_gerado_em: [],
-  finalizada_em: ["finalizado_em"],
+  csv_gerado_por: [],
+  finalizado_em: ["finalizada_em"],
+  finalizado_por: ["finalizada_por"],
 };
+
+/** ID do usuário autenticado (Supabase Auth) — usado nas colunas de autoria. */
+async function usuarioAutenticadoId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.id ?? null;
+}
 
 const ALIAS_ITEM = {
   material_codigo: ["codigo", "codigo_material"],
@@ -95,7 +103,7 @@ function mapDevolucao(linha: Payload, itens: ItemDevolucao[], nomes: Map<string,
     rmVinculadaEm: texto(campo(linha, ["rm_vinculada_em"])),
     rmVinculadaPor: null,
     finalizadaEm: texto(campo(linha, ["finalizada_em", "finalizado_em"])),
-    finalizadaPor: null,
+    finalizadaPor: nomes.get(texto(campo(linha, ["finalizado_por", "finalizada_por"])) ?? "") ?? null,
   };
 }
 
@@ -319,7 +327,11 @@ export async function registrarCsvGerado(devolucaoId: string) {
     await atualizarFlex(
       "devolucoes",
       devolucaoId,
-      { status: "csv_gerado", csv_gerado_em: new Date().toISOString() },
+      {
+        status: "csv_gerado",
+        csv_gerado_em: new Date().toISOString(),
+        csv_gerado_por: await usuarioAutenticadoId(),
+      },
       ALIAS_DEVOLUCAO,
     );
     await recarregar();
@@ -338,16 +350,39 @@ export async function vincularRm(devolucaoId: string, rm: string) {
   });
 }
 
-export async function finalizarDevolucao(devolucaoId: string) {
-  await comErro(async () => {
-    await atualizarFlex(
-      "devolucoes",
-      devolucaoId,
-      { status: "finalizada", finalizada_em: new Date().toISOString() },
-      ALIAS_DEVOLUCAO,
-    );
+export async function finalizarDevolucao(devolucaoId: string): Promise<boolean> {
+  const ok = await comErro(async () => {
+    // 1) Usa a função existente no banco, se ela estiver exposta.
+    const rpc = await supabase.rpc("finalizar_devolucao", { p_devolucao_id: devolucaoId });
+    const semFuncao =
+      rpc.error && (rpc.error.code === "PGRST202" || /Could not find the function/i.test(rpc.error.message ?? ""));
+    if (rpc.error && !semFuncao) throw rpc.error;
+
+    // 2) Caso a função não esteja disponível via API, grava nas colunas existentes.
+    if (semFuncao) {
+      await atualizarFlex(
+        "devolucoes",
+        devolucaoId,
+        {
+          status: "finalizada",
+          finalizado_em: new Date().toISOString(),
+          finalizado_por: await usuarioAutenticadoId(),
+        },
+        ALIAS_DEVOLUCAO,
+      );
+    }
+
+    // 3) Confirma a persistência lendo novamente do banco.
+    const { data, error } = await supabase.from("devolucoes").select("status").eq("id", devolucaoId).limit(1);
+    if (error) throw error;
+    const status = texto(campo(((data ?? []) as Payload[])[0] ?? {}, ["status"]));
+    if (status !== "finalizada") {
+      throw new Error(`A devolução não foi finalizada no banco (status atual: ${status ?? "desconhecido"}).`);
+    }
     await recarregar();
+    return true;
   });
+  return ok === true;
 }
 
 export async function removerDevolucao(devolucaoId: string) {

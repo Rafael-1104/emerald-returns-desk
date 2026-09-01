@@ -5,7 +5,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Panel, Field } from "@/components/ui-kit/PageSection";
 import { DevolucoesTable } from "@/components/devolucoes/DevolucoesTable";
 import { useDevolucoes } from "@/lib/devolucoes-store";
-import { statusLabels, usuarios, type DevolucaoStatus } from "@/lib/mock-data";
+import { statusLabels, type DevolucaoStatus } from "@/lib/mock-data";
+import { useUsuarios } from "@/lib/usuarios";
 
 export const Route = createFileRoute("/devolucoes")({
   head: () => ({
@@ -30,6 +31,7 @@ const inputClass =
 
 function Devolucoes() {
   const devolucoes = useDevolucoes();
+  const { usuarios } = useUsuarios();
   const navigate = Route.useNavigate();
 
   const [busca, setBusca] = useState("");
