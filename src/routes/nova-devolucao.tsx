@@ -20,11 +20,11 @@ import { ItensDevolucaoTable } from "@/components/devolucoes/ItensDevolucaoTable
 import { VolumesEditor, somaVolumes, type VolumeRascunho } from "@/components/devolucoes/VolumesEditor";
 import { baixarCsv, montarCsvAreco } from "@/lib/csv";
 import {
-  buscarMaterial,
   formatarDataHora,
   totalDevolucao,
   type ItemDevolucao,
 } from "@/lib/mock-data";
+import { buscarMaterialPorCodigo } from "@/lib/materiais";
 import {
   adicionarItem,
   atualizarItem,
@@ -144,11 +144,45 @@ function EditorDevolucao({ devolucaoId }: { devolucaoId: string }) {
   const [volumes, setVolumes] = useState<VolumeRascunho[]>([{ numero: 1, quantidade: "" }]);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [erros, setErros] = useState<{ codigo?: string; lote?: string; volumes?: string }>({});
+  const [materialEncontrado, setMaterialEncontrado] = useState<string | null>(null);
+  const [buscandoMaterial, setBuscandoMaterial] = useState(false);
   const [rmInput, setRmInput] = useState("");
 
+  // Descrição vem sempre da tabela real public.materiais (código tratado como TEXTO).
   useEffect(() => {
-    const material = buscarMaterial(codigo);
-    setDescricao(material?.descricao ?? "");
+    const alvo = codigo.trim();
+    if (!alvo) {
+      setDescricao("");
+      setMaterialEncontrado(null);
+      return;
+    }
+    let vivo = true;
+    setBuscandoMaterial(true);
+    const timer = setTimeout(() => {
+      buscarMaterialPorCodigo(alvo)
+        .then((material) => {
+          if (!vivo) return;
+          setMaterialEncontrado(material ? material.codigo : null);
+          setDescricao(material?.descricao ?? "");
+          setErros((atual) => ({
+            ...atual,
+            codigo: material ? undefined : "Código não encontrado no catálogo de materiais.",
+          }));
+        })
+        .catch((e: unknown) => {
+          if (!vivo) return;
+          setMaterialEncontrado(null);
+          setDescricao("");
+          toast.error(`Falha ao consultar materiais: ${e instanceof Error ? e.message : String(e)}`);
+        })
+        .finally(() => {
+          if (vivo) setBuscandoMaterial(false);
+        });
+    }, 300);
+    return () => {
+      vivo = false;
+      clearTimeout(timer);
+    };
   }, [codigo]);
 
   const editavel = devolucao ? podeEditar(devolucao) : false;
