@@ -103,7 +103,7 @@ function mapDevolucao(linha: Payload, itens: ItemDevolucao[], nomes: Map<string,
     rmVinculadaEm: texto(campo(linha, ["rm_vinculada_em"])),
     rmVinculadaPor: null,
     finalizadaEm: texto(campo(linha, ["finalizada_em", "finalizado_em"])),
-    finalizadaPor: null,
+    finalizadaPor: nomes.get(texto(campo(linha, ["finalizado_por", "finalizada_por"])) ?? "") ?? null,
   };
 }
 
@@ -327,7 +327,11 @@ export async function registrarCsvGerado(devolucaoId: string) {
     await atualizarFlex(
       "devolucoes",
       devolucaoId,
-      { status: "csv_gerado", csv_gerado_em: new Date().toISOString() },
+      {
+        status: "csv_gerado",
+        csv_gerado_em: new Date().toISOString(),
+        csv_gerado_por: await usuarioAutenticadoId(),
+      },
       ALIAS_DEVOLUCAO,
     );
     await recarregar();
