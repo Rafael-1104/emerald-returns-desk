@@ -350,16 +350,39 @@ export async function vincularRm(devolucaoId: string, rm: string) {
   });
 }
 
-export async function finalizarDevolucao(devolucaoId: string) {
-  await comErro(async () => {
-    await atualizarFlex(
-      "devolucoes",
-      devolucaoId,
-      { status: "finalizada", finalizada_em: new Date().toISOString() },
-      ALIAS_DEVOLUCAO,
-    );
+export async function finalizarDevolucao(devolucaoId: string): Promise<boolean> {
+  const ok = await comErro(async () => {
+    // 1) Usa a função existente no banco, se ela estiver exposta.
+    const rpc = await supabase.rpc("finalizar_devolucao", { p_devolucao_id: devolucaoId });
+    const semFuncao =
+      rpc.error && (rpc.error.code === "PGRST202" || /Could not find the function/i.test(rpc.error.message ?? ""));
+    if (rpc.error && !semFuncao) throw rpc.error;
+
+    // 2) Caso a função não esteja disponível via API, grava nas colunas existentes.
+    if (semFuncao) {
+      await atualizarFlex(
+        "devolucoes",
+        devolucaoId,
+        {
+          status: "finalizada",
+          finalizado_em: new Date().toISOString(),
+          finalizado_por: await usuarioAutenticadoId(),
+        },
+        ALIAS_DEVOLUCAO,
+      );
+    }
+
+    // 3) Confirma a persistência lendo novamente do banco.
+    const { data, error } = await supabase.from("devolucoes").select("status").eq("id", devolucaoId).limit(1);
+    if (error) throw error;
+    const status = texto(campo(((data ?? []) as Payload[])[0] ?? {}, ["status"]));
+    if (status !== "finalizada") {
+      throw new Error(`A devolução não foi finalizada no banco (status atual: ${status ?? "desconhecido"}).`);
+    }
     await recarregar();
+    return true;
   });
+  return ok === true;
 }
 
 export async function removerDevolucao(devolucaoId: string) {
