@@ -18,8 +18,16 @@ const ALIAS_DEVOLUCAO = {
   status: [],
   rm: ["numero_rm", "rm_numero"],
   csv_gerado_em: [],
-  finalizada_em: ["finalizado_em"],
+  csv_gerado_por: [],
+  finalizado_em: ["finalizada_em"],
+  finalizado_por: ["finalizada_por"],
 };
+
+/** ID do usuário autenticado (Supabase Auth) — usado nas colunas de autoria. */
+async function usuarioAutenticadoId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.id ?? null;
+}
 
 const ALIAS_ITEM = {
   material_codigo: ["codigo", "codigo_material"],
