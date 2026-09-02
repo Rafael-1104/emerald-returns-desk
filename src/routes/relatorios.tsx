@@ -156,9 +156,91 @@ function Relatorios() {
                 </div>
               )}
             </Panel>
+
+            <FolhaImpressao devolucao={devolucao} />
           </>
         )}
       </div>
     </AppLayout>
+  );
+}
+
+/**
+ * Documento de impressão (A4 retrato) renderizado como filho direto de <body>
+ * por portal: no @media print somente ele fica visível.
+ */
+function FolhaImpressao({ devolucao }: { devolucao: Devolucao }) {
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
+  if (!montado || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="folha-impressao">
+      <div style={{ textAlign: "center", marginBottom: "10mm" }}>
+        <h1 style={{ fontSize: "14pt", fontWeight: 700, margin: 0 }}>Relatório de Devolução de Materiais</h1>
+      </div>
+
+      <table style={{ marginBottom: "6mm", border: "none" }}>
+        <tbody>
+          <tr>
+            <td style={{ border: "none", padding: 0 }}>
+              <strong>Identificador interno:</strong> {devolucao.identificador}
+            </td>
+            <td style={{ border: "none", padding: 0 }}>
+              <strong>RM (ARECO):</strong> {devolucao.rm ?? "—"}
+            </td>
+          </tr>
+          <tr>
+            <td style={{ border: "none", padding: 0 }}>
+              <strong>Criada por:</strong> {devolucao.criadoPor}
+            </td>
+            <td style={{ border: "none", padding: 0 }}>
+              <strong>Data:</strong> {formatarDataHora(devolucao.criadoEm)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table>
+        <thead>
+          <tr>
+            <th style={{ width: "18%" }}>Código</th>
+            <th style={{ width: "50%" }}>Descrição</th>
+            <th style={{ width: "16%" }}>Quantidade Total</th>
+            <th style={{ width: "16%" }}>Lote</th>
+          </tr>
+        </thead>
+        <tbody>
+          {devolucao.itens.map((item) => (
+            <tr key={item.id}>
+              <td>{item.materialCodigo}</td>
+              <td>{item.descricao}</td>
+              <td>{totalItem(item)}</td>
+              <td>{item.lote}</td>
+            </tr>
+          ))}
+          <tr>
+            <td colSpan={2} style={{ fontWeight: 700, textAlign: "right" }}>
+              Quantidade total devolvida
+            </td>
+            <td style={{ fontWeight: 700 }}>{totalDevolucao(devolucao)}</td>
+            <td />
+          </tr>
+        </tbody>
+      </table>
+
+      <table style={{ marginTop: "20mm", border: "none" }}>
+        <tbody>
+          <tr>
+            {["Responsável pela devolução", "Responsável pelo recebimento"].map((label) => (
+              <td key={label} style={{ border: "none", padding: "0 8mm", textAlign: "center" }}>
+                <div style={{ borderTop: "1px solid #000", paddingTop: "2mm", fontSize: "9pt" }}>{label}</div>
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>,
+    document.body,
   );
 }
