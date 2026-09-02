@@ -163,14 +163,10 @@
     color: #000 !important;
   }
 
-  /* Esconde toda a interface: sidebar, header, botões, painéis. */
-  body > * {
+  /* Esconde toda a interface: sidebar, header, botões, painéis.
+     A folha é renderizada via portal como filha direta de <body>. */
+  body > *:not(.folha-impressao) {
     display: none !important;
-  }
-
-  body .folha-impressao,
-  body .folha-impressao * {
-    visibility: visible;
   }
 
   .folha-impressao {
