@@ -57,8 +57,8 @@ function Relatorios() {
 
   async function finalizar() {
     if (!devolucao) return;
-    await finalizarDevolucao(devolucao.id);
-    toast.success(`Devolução ${devolucao.identificador} finalizada`);
+    const ok = await finalizarDevolucao(devolucao.id);
+    if (ok) toast.success(`Devolução ${devolucao.identificador} finalizada`);
   }
 
   return (
