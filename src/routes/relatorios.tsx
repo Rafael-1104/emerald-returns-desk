@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -7,7 +8,7 @@ import { Panel, Field } from "@/components/ui-kit/PageSection";
 import { StatusBadge } from "@/components/ui-kit/StatusBadge";
 import { ItensDevolucaoTable } from "@/components/devolucoes/ItensDevolucaoTable";
 import { finalizarDevolucao, useDevolucoes } from "@/lib/devolucoes-store";
-import { formatarDataHora, totalDevolucao } from "@/lib/mock-data";
+import { formatarDataHora, totalDevolucao, totalItem, type Devolucao } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/relatorios")({
   validateSearch: (search: Record<string, unknown>) => ({
