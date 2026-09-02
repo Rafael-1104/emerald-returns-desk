@@ -142,3 +142,63 @@
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
 }
+
+/* ------------------------------------------------------------------ */
+/* Impressão do relatório final — A4 retrato, somente o documento      */
+/* ------------------------------------------------------------------ */
+
+.folha-impressao {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Esconde toda a interface: sidebar, header, botões, painéis.
+     A folha é renderizada via portal como filha direta de <body>. */
+  body > *:not(.folha-impressao) {
+    display: none !important;
+  }
+
+  .folha-impressao {
+    display: block !important;
+    position: static;
+    width: 100%;
+    background: #fff;
+    color: #000;
+    font-size: 10.5pt;
+    line-height: 1.35;
+  }
+
+  .folha-impressao table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .folha-impressao th,
+  .folha-impressao td {
+    border: 1px solid #333;
+    padding: 4px 6px;
+    text-align: left;
+    word-wrap: break-word;
+    vertical-align: top;
+  }
+
+  .folha-impressao thead {
+    display: table-header-group;
+  }
+
+  .folha-impressao tr {
+    break-inside: avoid;
+  }
+}
