@@ -10,7 +10,7 @@ import {
   LogOut,
   type LucideIcon,
 } from "lucide-react";
-import logo from "@/assets/logo.png";
+
 import { cn } from "@/lib/utils";
 
 type Item = { label: string; to: string; icon: LucideIcon };
