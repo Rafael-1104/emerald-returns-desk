@@ -81,6 +81,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Sistema de Devoluções" },
       { name: "description", content: "Controle interno de devolução de materiais." },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "pt_BR" },
+      { name: "language", content: "pt-BR" },
+      { httpEquiv: "content-language", content: "pt-BR" },
+      { name: "google", content: "notranslate" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
