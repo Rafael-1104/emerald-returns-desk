@@ -10,7 +10,7 @@ import {
   LogOut,
   type LucideIcon,
 } from "lucide-react";
-import logo from "@/assets/logo.png";
+
 import { cn } from "@/lib/utils";
 
 type Item = { label: string; to: string; icon: LucideIcon };
@@ -49,7 +49,7 @@ export function Sidebar() {
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col border-r border-sidebar-border bg-sidebar lg:flex">
       <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
         <img
-          src={logo}
+          src="/android-chrome-192x192.png"
           alt="Logo do Sistema de Devoluções"
           className="h-11 w-11 shrink-0 rounded-xl object-contain"
         />
