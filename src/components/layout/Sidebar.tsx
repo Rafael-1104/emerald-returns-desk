@@ -6,6 +6,7 @@ import {
   FileText,
   Users,
   Settings,
+  Search,
   PlugZap,
   LogOut,
   type LucideIcon,
