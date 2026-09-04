@@ -25,6 +25,28 @@ export async function buscarMaterialPorCodigo(codigo: string): Promise<Material 
   return linha ? mapear(linha, alvo) : null;
 }
 
+/**
+ * Busca materiais cuja descrição contenha TODAS as palavras informadas (AND),
+ * em qualquer ordem e sem diferenciar maiúsculas/minúsculas.
+ */
+export async function buscarMateriaisPorDescricao(
+  palavras: string[],
+  limite = 200,
+): Promise<Material[]> {
+  const termos = palavras.map((p) => p.trim()).filter(Boolean);
+  if (termos.length === 0) return [];
+
+  let consulta = supabase.from("materiais").select("*");
+  for (const termo of termos) {
+    consulta = consulta.ilike("descricao", `%${termo}%`);
+  }
+
+  const { data, error } = await consulta.order("descricao").limit(limite);
+  if (error) throw error;
+
+  return ((data ?? []) as Payload[]).map((linha) => mapear(linha, ""));
+}
+
 /** Descrições de vários códigos de uma vez (usado ao carregar itens já salvos). */
 export async function buscarDescricoes(codigos: string[]): Promise<Map<string, string>> {
   const unicos = [...new Set(codigos.filter(Boolean))];
