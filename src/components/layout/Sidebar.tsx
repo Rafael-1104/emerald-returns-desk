@@ -6,6 +6,7 @@ import {
   FileText,
   Users,
   Settings,
+  Search,
   PlugZap,
   LogOut,
   type LucideIcon,
@@ -27,6 +28,10 @@ export const navGroups: Group[] = [
       { label: "Nova devolução", to: "/nova-devolucao", icon: PackagePlus },
       { label: "Devoluções", to: "/devolucoes", icon: PackageSearch },
     ],
+  },
+  {
+    title: "Consulta",
+    items: [{ label: "Consulta de Código", to: "/consulta-codigo", icon: Search }],
   },
   {
     title: "Documentos",
