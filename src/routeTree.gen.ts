@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
+import { Route as ConsultaCodigoRouteImport } from './routes/consulta-codigo'
 import { Route as DevolucoesRouteImport } from './routes/devolucoes'
 import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as LoginRouteImport } from './routes/login'
@@ -26,6 +27,11 @@ const IndexRoute = IndexRouteImport.update({
 const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
   id: '/configuracoes',
   path: '/configuracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsultaCodigoRoute = ConsultaCodigoRouteImport.update({
+  id: '/consulta-codigo',
+  path: '/consulta-codigo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevolucoesRoute = DevolucoesRouteImport.update({
@@ -62,6 +68,7 @@ const UsuariosRoute = UsuariosRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/consulta-codigo': typeof ConsultaCodigoRoute
   '/devolucoes': typeof DevolucoesRoute
   '/diagnostico': typeof DiagnosticoRoute
   '/login': typeof LoginRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/consulta-codigo': typeof ConsultaCodigoRoute
   '/devolucoes': typeof DevolucoesRoute
   '/diagnostico': typeof DiagnosticoRoute
   '/login': typeof LoginRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/consulta-codigo': typeof ConsultaCodigoRoute
   '/devolucoes': typeof DevolucoesRoute
   '/diagnostico': typeof DiagnosticoRoute
   '/login': typeof LoginRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/configuracoes'
+    | '/consulta-codigo'
     | '/devolucoes'
     | '/diagnostico'
     | '/login'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/configuracoes'
+    | '/consulta-codigo'
     | '/devolucoes'
     | '/diagnostico'
     | '/login'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/configuracoes'
+    | '/consulta-codigo'
     | '/devolucoes'
     | '/diagnostico'
     | '/login'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
+  ConsultaCodigoRoute: typeof ConsultaCodigoRoute
   DevolucoesRoute: typeof DevolucoesRoute
   DiagnosticoRoute: typeof DiagnosticoRoute
   LoginRoute: typeof LoginRoute
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/configuracoes'
       fullPath: '/configuracoes'
       preLoaderRoute: typeof ConfiguracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/consulta-codigo': {
+      id: '/consulta-codigo'
+      path: '/consulta-codigo'
+      fullPath: '/consulta-codigo'
+      preLoaderRoute: typeof ConsultaCodigoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/devolucoes': {
@@ -198,6 +218,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
+  ConsultaCodigoRoute: ConsultaCodigoRoute,
   DevolucoesRoute: DevolucoesRoute,
   DiagnosticoRoute: DiagnosticoRoute,
   LoginRoute: LoginRoute,

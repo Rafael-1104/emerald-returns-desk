@@ -29,6 +29,10 @@ export const navGroups: Group[] = [
     ],
   },
   {
+    title: "Consulta",
+    items: [{ label: "Consulta de Código", to: "/consulta-codigo", icon: Search }],
+  },
+  {
     title: "Documentos",
     items: [{ label: "Relatórios", to: "/relatorios", icon: FileText }],
   },
